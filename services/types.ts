@@ -14,19 +14,45 @@ export enum Status {
   Delivered = "تم التسليم",
 }
 
+export interface Task {
+  id: string;
+  text: string;
+  isCompleted: boolean;
+}
+
+export interface UpdateLogEntry {
+  id:string;
+  text: string;
+  timestamp: string;
+}
+
+export interface Attachment {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  dataUrl: string;
+}
+
 export interface Project {
   id: string;
   name: string;
   studentName: string;
   technology: Technology;
-  deadline: string;
+  startDate: string;
+  deadline:string;
   status: Status;
   description: string;
-  progressNotes: string;
+  tasks: Task[];
+  updateLog: UpdateLogEntry[];
+  attachments: Attachment[];
   githubLink?: string;
   whatsappNumber?: string;
   telegramUsername?: string;
+  // Kept for migration purposes from old data structures
+  progressNotes?: string; 
 }
+
 
 export const statusDetails: Record<Status, { color: string; borderColor: string; emoji: string }> = {
   [Status.NotStarted]: { color: 'bg-gray-500', borderColor: 'border-gray-500', emoji: '⏸️' },
