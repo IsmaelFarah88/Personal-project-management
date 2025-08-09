@@ -5,13 +5,14 @@ import { CloseIcon } from './icons/CloseIcon';
 interface AddProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProject: (project: Omit<Project, 'id'>) => void;
+  onAddProject: (project: Omit<Project, 'id' | 'tasks' | 'updateLog' | 'attachments'>) => void;
 }
 
 const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onAddProject }) => {
   const [name, setName] = useState('');
   const [studentName, setStudentName] = useState('');
   const [technology, setTechnology] = useState<Technology>(Technology.Python);
+  const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
   const [description, setDescription] = useState('');
   const [githubLink, setGithubLink] = useState('');
@@ -20,18 +21,18 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onAd
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !studentName || !deadline || !description) {
-      alert('الرجاء تعبئة الحقول الأساسية (اسم المشروع، اسم الطالب، الموعد، الوصف)');
+    if (!name || !studentName || !startDate || !deadline || !description) {
+      alert('الرجاء تعبئة الحقول الأساسية (اسم المشروع، اسم الطالب، تاريخ البدء، الموعد، الوصف)');
       return;
     }
     onAddProject({
       name,
       studentName,
       technology,
+      startDate,
       deadline,
       description,
       status: Status.NotStarted,
-      progressNotes: 'لم يتم البدء بعد.',
       githubLink,
       whatsappNumber,
       telegramUsername
@@ -40,6 +41,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onAd
     setName('');
     setStudentName('');
     setTechnology(Technology.Python);
+    setStartDate('');
     setDeadline('');
     setDescription('');
     setGithubLink('');
@@ -69,17 +71,23 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onAd
                 <label htmlFor="add-studentName" className="block text-sm font-medium text-gray-300 mb-1">اسم الطالب</label>
                 <input type="text" id="add-studentName" value={studentName} onChange={e => setStudentName(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
               </div>
-              <div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="add-startDate" className="block text-sm font-medium text-gray-300 mb-1">تاريخ البدء</label>
+                    <input type="date" id="add-startDate" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+                <div>
+                    <label htmlFor="add-deadline" className="block text-sm font-medium text-gray-300 mb-1">الموعد النهائي</label>
+                    <input type="date" id="add-deadline" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
+                </div>
+            </div>
+             <div>
                 <label htmlFor="add-technology" className="block text-sm font-medium text-gray-300 mb-1">التقنية المستخدمة</label>
                 <select id="add-technology" value={technology} onChange={e => setTechnology(e.target.value as Technology)} className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                   {Object.values(Technology).map((tech: Technology) => <option key={tech} value={tech}>{tech}</option>)}
                 </select>
               </div>
-              <div>
-                <label htmlFor="add-deadline" className="block text-sm font-medium text-gray-300 mb-1">الموعد النهائي</label>
-                <input type="date" id="add-deadline" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" />
-              </div>
-            </div>
              <div>
                 <label htmlFor="add-description" className="block text-sm font-medium text-gray-300 mb-1">وصف المشروع</label>
                 <textarea id="add-description" value={description} onChange={e => setDescription(e.target.value)} rows={4} className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"></textarea>

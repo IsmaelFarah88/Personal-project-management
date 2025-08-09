@@ -11,6 +11,7 @@ import { PauseCircleIcon } from './icons/PauseCircleIcon';
 import { RectangleGroupIcon } from './icons/RectangleGroupIcon';
 import { UserGroupIcon } from './icons/UserGroupIcon';
 import { CogIcon } from './icons/CogIcon';
+import { ChartBarIcon } from './icons/ChartBarIcon';
 
 
 interface DashboardProps {
@@ -19,8 +20,8 @@ interface DashboardProps {
     onRestore: (file: File) => void;
     onAddProjectClick: () => void;
     onOpenTelegramSettings: () => void;
-    viewMode: 'projects' | 'students';
-    onViewChange: (mode: 'projects' | 'students') => void;
+    viewMode: 'projects' | 'students' | 'timeline';
+    onViewChange: (mode: 'projects' | 'students' | 'timeline') => void;
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ projects, onBackup, onRestore, onAddProjectClick, onOpenTelegramSettings, viewMode, onViewChange }) => {
@@ -46,6 +47,12 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onBackup, onRestore, on
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
         }
+    };
+
+    const viewTitles: Record<typeof viewMode, string> = {
+        projects: 'كل المشاريع',
+        students: 'المشاريع حسب الطالب',
+        timeline: 'الخط الزمني للمشاريع'
     };
 
     return (
@@ -105,7 +112,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onBackup, onRestore, on
             {/* View Switcher Section */}
             <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
                  <h2 className="text-3xl font-bold text-gray-200">
-                    {viewMode === 'projects' ? 'كل المشاريع' : 'المشاريع حسب الطالب'}
+                    {viewTitles[viewMode]}
                 </h2>
                 <div className="flex items-center gap-2 bg-gray-800 p-1 rounded-lg">
                     <button
@@ -127,6 +134,16 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onBackup, onRestore, on
                     >
                         <UserGroupIcon className="w-5 h-5" />
                         <span>عرض الطلاب</span>
+                    </button>
+                    <button
+                        onClick={() => onViewChange('timeline')}
+                        className={`flex items-center gap-2 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${
+                            viewMode === 'timeline' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'
+                        }`}
+                        aria-pressed={viewMode === 'timeline'}
+                    >
+                        <ChartBarIcon className="w-5 h-5" />
+                        <span>الخط الزمني</span>
                     </button>
                 </div>
             </div>

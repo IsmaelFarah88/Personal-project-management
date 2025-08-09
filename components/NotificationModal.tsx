@@ -12,38 +12,90 @@ interface NotificationModalProps {
 
 const getNotificationMessage = (project: Project, language: 'ar' | 'fa'): string => {
   const studentName = project.studentName;
-  const projectName = `"${project.name}"`;
+  const projectName = project.name;
   const myName = "إسماعيل فرح";
-  
+  const deadline = new Date(project.deadline).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'fa-IR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+  });
+
   const messages = {
     ar: {
-      greeting: `مرحباً ${studentName}،`,
-      system_intro: `تم إرسال هذا الإشعار عبر نظام مراقبة المشاريع الخاص بـ "إسماعيل فرح".`,
-      status_message: {
-        [Status.NotStarted]: `نود إعلامك بأنه قد تم تسجيل مشروعك ${projectName} بنجاح في نظامنا. سيتم البدء في العمل عليه قريبًا، وسنوافيك بالتحديثات فورًا.`,
-        [Status.InProgress]: `نحيطك علمًا بأن العمل جارٍ حاليًا على مشروعك ${projectName}. نعمل بجد لإنجازه بأفضل جودة، وسيتم إعلامك فور اكتماله.`,
-        [Status.Completed]: `خبر سار! تم الانتهاء من تطوير مشروعك ${projectName}. حاليًا، يمر المشروع بمرحلة المراجعة والاختبار لضمان جودته. سيتم تجهيزه للتسليم النهائي قريبًا.`,
-        [Status.Delivered]: `تم تسليم مشروعك ${projectName} بشكل نهائي. نأمل أن يكون قد نال رضاك. شكرًا لثقتك ونتمنى لك كل التوفيق.`,
+      greeting: `👋 مرحباً ${studentName}،`,
+      status_subject: {
+        [Status.NotStarted]: `✅ تم تسجيل مشروعك بنجاح!`,
+        [Status.InProgress]: `🚀 تحديث بخصوص مشروعك "${projectName}"`,
+        [Status.Completed]: `🎉 أخبار رائعة! مشروعك "${projectName}" اكتمل تقريباً`,
+        [Status.Delivered]: `📦 تم تسليم مشروعك "${projectName}" بنجاح!`
       },
-      closing: `بالتوفيق،\n${myName}`
+      details_header: "تفاصيل المشروع:",
+      project_name: `📌 المشروع: ${projectName}`,
+      technology: `🔧 التقنية: ${project.technology}`,
+      deadline: `🗓️ الموعد النهائي: ${deadline}`,
+      github: `🔗 رابط GitHub:`,
+      latest_update_header: `💡 آخر تحديث مسجل:`,
+      status_message: {
+        [Status.NotStarted]: `تم إعداد كل شيء لمشروعك. سنقوم بإعلامك فور بدء العمل عليه. استعد للانطلاق!`,
+        [Status.InProgress]: `العمل يجري على قدم وساق! نحن نحقق تقدمًا جيدًا. يمكنك متابعة آخر التحديثات مباشرةً عبر مستودع GitHub.`,
+        [Status.Completed]: `لقد انتهينا من مرحلة البرمجة الأساسية! المشروع الآن قيد المراجعة النهائية والاختبار لضمان خلوه من الأخطاء وتقديمه بأفضل جودة.`,
+        [Status.Delivered]: `نأمل أن يكون كل شيء كما توقعت. لا تتردد في مراجعته وإعلامنا بأي ملاحظات. نتمنى لك كل التوفيق في استخدامه وعرضه.`,
+      },
+      closing: `بالتوفيق،\n${myName}`,
+      system_intro: `\n\n---\n📬 هذا إشعار آلي من نظام إدارة المشاريع.`
     },
     fa: {
-      greeting: `سلام ${studentName}،`,
-      system_intro: `این اعلان از طریق سیستم نظارت بر پروژه "اسماعیل فرح" برای شما ارسال شده است.`,
-      status_message: {
-        [Status.NotStarted]: `مایلیم به اطلاع شما برسانیم که پروژه شما ${projectName} با موفقیت در سیستم ما ثبت شده است. کار بر روی آن به زودی آغاز خواهد شد و ما شما را از به‌روزرسانی‌ها مطلع خواهیم کرد.`,
-        [Status.InProgress]: `به اطلاع می‌رسانیم که کار بر روی پروژه شما ${projectName} در حال انجام است. ما برای تکمیل آن با بهترین کیفیت تلاش می‌کنیم و پس از اتمام به شما اطلاع داده خواهد شد.`,
-        [Status.Completed]: `خبر خوب! توسعه پروژه شما ${projectName} به پایان رسیده است. در حال حاضر، پروژه برای اطمینان از کیفیت، در مرحله بررسی و آزمایش قرار دارد. به زودی برای تحویل نهایی آماده خواهد شد.`,
-        [Status.Delivered]: `پروژه شما ${projectName} به طور نهایی تحویل داده شد. امیدواریم مورد رضایت شما قرار گرفته باشد. از اعتماد شما سپاسگزاریم و برای شما آرزوی موفقیت داریم.`,
+      greeting: `👋 سلام ${studentName}،`,
+      status_subject: {
+        [Status.NotStarted]: `✅ پروژه شما با موفقیت ثبت شد!`,
+        [Status.InProgress]: `🚀 به‌روزرسانی در مورد پروژه شما "${projectName}"`,
+        [Status.Completed]: `🎉 خبر عالی! پروژه شما "${projectName}" تقریباً کامل شده است`,
+        [Status.Delivered]: `📦 پروژه شما "${projectName}" با موفقیت تحویل داده شد!`
       },
-      closing: `با آرزوی موفقیت،\n${myName}`
+      details_header: "جزئیات پروژه:",
+      project_name: `📌 پروژه: ${projectName}`,
+      technology: `🔧 تکنولوژی: ${project.technology}`,
+      deadline: `🗓️ مهلت نهایی: ${deadline}`,
+      github: `🔗 لینک گیت‌هاب:`,
+      latest_update_header: `💡 آخرین به‌روزرسانی ثبت‌شده:`,
+      status_message: {
+        [Status.NotStarted]: `همه چیز برای پروژه شما آماده شده است. به محض شروع کار به شما اطلاع خواهیم داد. آماده شروع باشید!`,
+        [Status.InProgress]: `کار با سرعت در حال انجام است! ما پیشرفت خوبی داریم. شما می‌توانید آخرین به‌روزرسانی‌ها را مستقیماً از طریق مخزن گیت‌هاب دنبال کنید.`,
+        [Status.Completed]: `ما مرحله اصلی برنامه‌نویسی را به پایان رسانده‌ایم! پروژه اکنون در حال بررسی نهایی و آزمایش است تا از بدون خطا بودن آن و ارائه با بهترین کیفیت اطمینان حاصل شود.`,
+        [Status.Delivered]: `امیدواریم همه چیز همانطور که انتظار داشتید باشد. لطفاً آن را بررسی کرده و هرگونه بازخورد را به ما اطلاع دهید. برای شما در استفاده و ارائه آن آرزوی موفقیت داریم.`,
+      },
+      closing: `با آرزوی موفقیت،\n${myName}`,
+      system_intro: `\n\n---\n📬 این یک اعلان خودکار از سیستم مدیریت پروژه است.`
     }
   };
 
   const langMessages = messages[language];
-  const statusMessage = langMessages.status_message[project.status] || `إشعار بخصوص مشروع ${projectName}.`;
+  const subject = langMessages.status_subject[project.status] || `تحديث بخصوص مشروعك`;
+  const statusMessage = langMessages.status_message[project.status] || '';
+  
+  const projectDetails = [
+      langMessages.details_header,
+      langMessages.project_name,
+      langMessages.technology,
+      langMessages.deadline,
+      project.githubLink ? `${langMessages.github} ${project.githubLink}` : null
+  ].filter(Boolean).join('\n');
 
-  return `${langMessages.greeting}\n\n${langMessages.system_intro}\n\n${statusMessage}\n\n${langMessages.closing}`;
+  const latestUpdate = project.updateLog?.slice().sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+  const latestUpdateMessage = latestUpdate ? `${langMessages.latest_update_header} "${latestUpdate.text}"` : null;
+
+  return [
+    langMessages.greeting,
+    subject,
+    '', // empty line
+    projectDetails,
+    '', // empty line
+    statusMessage,
+    latestUpdateMessage,
+    '', // empty line
+    langMessages.closing,
+    langMessages.system_intro
+  ].filter(Boolean).join('\n');
 };
 
 
@@ -51,13 +103,16 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose, 
   const [message, setMessage] = useState('');
   const [language, setLanguage] = useState<'ar' | 'fa'>('ar');
 
-  useEffect(() => {
+  const updateMessageTemplate = useCallback(() => {
     if (project) {
         setMessage(getNotificationMessage(project, language));
     }
   }, [project, language]);
 
-  // Reset language to Arabic when modal opens for a new project
+  useEffect(() => {
+    updateMessageTemplate();
+  }, [updateMessageTemplate]);
+
   useEffect(() => {
     if(isOpen) {
         setLanguage('ar');
@@ -86,7 +141,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose, 
             </button>
           </div>
           <p className="text-gray-400 mb-4">
-            إشعار بخصوص مشروع "{project.name}" (الحالة: {project.status}). اختر اللغة، ثم قم بمراجعة الرسالة وأرسلها للطالب.
+            إشعار بخصوص مشروع "{project.name}" (الحالة: {project.status}). يمكنك تعديل الرسالة أدناه قبل إرسالها.
           </p>
 
           <div className="mb-4">
@@ -119,22 +174,30 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose, 
           
           <div className="space-y-4">
             <div>
-              <label htmlFor="notification-message" className="block text-sm font-medium text-gray-300 mb-1">نص الرسالة</label>
+              <label htmlFor="notification-message" className="block text-sm font-medium text-gray-300 mb-1">نص الرسالة (قابل للتعديل)</label>
               <textarea
                 id="notification-message"
-                readOnly
                 value={message}
-                rows={10}
-                className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white resize-none"
+                onChange={(e) => setMessage(e.target.value)}
+                rows={15}
+                className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={updateMessageTemplate}
+                className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm"
+              >
+                استعادة النص الأصلي
+              </button>
               <button
                 onClick={handleCopy}
-                className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-md transition-colors"
+                className="w-full bg-cyan-700 hover:bg-cyan-800 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm"
               >
                 نسخ الرسالة
               </button>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3">
               {project.whatsappNumber && (
                 <a
                   href={whatsappLink}

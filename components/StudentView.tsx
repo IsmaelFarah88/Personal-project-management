@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { type Project, Status } from '../services/types';
 import ProjectCard from './ProjectCard';
@@ -8,6 +9,9 @@ interface StudentViewProps {
   onOpenEditModal: (project: Project) => void;
   onOpenNotificationModal: (project: Project) => void;
   onDeleteProject: (projectId: string) => void;
+  onUpdateProject: (project: Project) => void;
+  onAddTask: (projectId: string, taskText: string) => void;
+  onAddUpdate: (projectId: string, updateText: string) => void;
 }
 
 interface ProjectsByStudent {
@@ -58,6 +62,9 @@ const StudentView: React.FC<StudentViewProps> = (props) => {
                                   onOpenEditModal={props.onOpenEditModal}
                                   onOpenNotificationModal={props.onOpenNotificationModal}
                                   onDeleteProject={props.onDeleteProject}
+                                  onUpdateProject={props.onUpdateProject}
+                                  onAddTask={props.onAddTask}
+                                  onAddUpdate={props.onAddUpdate}
                                 />
                             ))
                         }
