@@ -433,10 +433,10 @@ const App: React.FC = () => {
 
       <button
         onClick={() => setIsBotSimulatorOpen(true)}
-        className="fixed bottom-6 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 rounded-full shadow-lg hover:scale-110 transform transition-all duration-300 z-40"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-3 sm:p-4 rounded-full shadow-lg hover:scale-110 transform transition-all duration-300 z-40"
         aria-label="فتح مساعد البوت"
       >
-        <BotIcon className="w-8 h-8" />
+        <BotIcon className="w-6 h-6 sm:w-8 sm:h-8" />
       </button>
 
       <AddProjectModal
