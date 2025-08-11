@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { type Project, Status } from '../services/types';
 import { CloseIcon } from './icons/CloseIcon';
@@ -132,7 +133,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose, 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg">
+      <div className="bg-gray-800 rounded-lg shadow-xl w-full max-w-lg max-h-full overflow-y-auto">
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-cyan-300">إرسال إشعار للطالب</h2>

@@ -156,7 +156,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, onUpdateStatus, onOp
           <span>{new Date(project.deadline).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
         
-        <div className="mt-4 flex justify-between items-center">
+        <div className="mt-4 flex flex-wrap justify-center sm:justify-between items-center gap-3">
             <select
                 value={project.status}
                 onChange={(e) => onUpdateStatus(project.id, e.target.value as Status)}

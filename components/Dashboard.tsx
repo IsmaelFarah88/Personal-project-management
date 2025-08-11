@@ -1,3 +1,4 @@
+
 import React, { useMemo, useRef } from 'react';
 import { type Project, Status } from '../services/types';
 import { PlusIcon } from './icons/PlusIcon';
@@ -114,10 +115,10 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onBackup, onRestore, on
                  <h2 className="text-3xl font-bold text-gray-200">
                     {viewTitles[viewMode]}
                 </h2>
-                <div className="flex items-center gap-2 bg-gray-800 p-1 rounded-lg">
+                <div className="flex flex-wrap items-center justify-center gap-1 bg-gray-800 p-1 rounded-lg">
                     <button
                         onClick={() => onViewChange('projects')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${
+                        className={`flex items-center gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-colors ${
                             viewMode === 'projects' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'
                         }`}
                         aria-pressed={viewMode === 'projects'}
@@ -127,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onBackup, onRestore, on
                     </button>
                     <button
                         onClick={() => onViewChange('students')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${
+                        className={`flex items-center gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-colors ${
                             viewMode === 'students' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'
                         }`}
                         aria-pressed={viewMode === 'students'}
@@ -137,7 +138,7 @@ const Dashboard: React.FC<DashboardProps> = ({ projects, onBackup, onRestore, on
                     </button>
                     <button
                         onClick={() => onViewChange('timeline')}
-                        className={`flex items-center gap-2 py-2 px-4 rounded-md text-sm font-semibold transition-colors ${
+                        className={`flex items-center gap-2 py-2 px-3 rounded-md text-sm font-semibold transition-colors ${
                             viewMode === 'timeline' ? 'bg-indigo-600 text-white shadow-lg' : 'text-gray-400 hover:bg-gray-700'
                         }`}
                         aria-pressed={viewMode === 'timeline'}
