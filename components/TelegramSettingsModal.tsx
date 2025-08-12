@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { CloseIcon } from './icons/CloseIcon';
 import { getTelegramConfig, saveTelegramConfig, type TelegramConfig, type NotificationEvent, tgEscape } from '../services/telegramService';
@@ -5,6 +6,7 @@ import { getTelegramConfig, saveTelegramConfig, type TelegramConfig, type Notifi
 interface TelegramSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  showToast: (message: string, type: 'success' | 'error') => void;
 }
 
 interface TestResult {
@@ -43,12 +45,11 @@ const testTelegramConnection = async (token: string, chatId: string): Promise<Te
     }
 }
 
-const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({ isOpen, onClose }) => {
+const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({ isOpen, onClose, showToast }) => {
     const [token, setToken] = useState('');
     const [chatId, setChatId] = useState('');
     const [notificationSettings, setNotificationSettings] = useState(defaultNotificationSettings);
     const [isTesting, setIsTesting] = useState(false);
-    const [testResult, setTestResult] = useState<TestResult | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -60,13 +61,12 @@ const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({ isOpen, o
             } else {
                 setNotificationSettings(defaultNotificationSettings);
             }
-            setTestResult(null);
         }
     }, [isOpen]);
 
     const handleSave = () => {
         if (!token || !chatId) {
-            alert('الرجاء تعبئة الحقول المطلوبة قبل الحفظ.');
+            showToast('الرجاء تعبئة الحقول المطلوبة قبل الحفظ.', 'error');
             return;
         }
         const config: TelegramConfig = {
@@ -75,15 +75,14 @@ const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({ isOpen, o
             notifications: notificationSettings
         };
         saveTelegramConfig(config);
-        alert('تم حفظ الإعدادات بنجاح!');
+        showToast('تم حفظ الإعدادات بنجاح!', 'success');
         onClose();
     };
 
     const handleTest = async () => {
         setIsTesting(true);
-        setTestResult(null);
         const result = await testTelegramConnection(token, chatId);
-        setTestResult(result);
+        showToast(result.message, result.success ? 'success' : 'error');
         setIsTesting(false);
     };
 
@@ -168,13 +167,7 @@ const TelegramSettingsModal: React.FC<TelegramSettingsModalProps> = ({ isOpen, o
                         </div>
                     </div>
 
-                     {testResult && (
-                        <div className={`mt-6 p-3 rounded-md text-sm ${testResult.success ? 'bg-green-800/50 text-green-300' : 'bg-red-800/50 text-red-300'}`}>
-                            {testResult.message}
-                        </div>
-                     )}
-                    
-                    <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6">
+                    <div className="flex flex-col sm:flex-row justify-end gap-4 pt-6 mt-4 border-t border-gray-700">
                         <button
                             type="button"
                             onClick={handleTest}

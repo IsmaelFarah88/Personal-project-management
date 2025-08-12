@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { type Project, Technology, Status } from '../services/types';
 import { CloseIcon } from './icons/CloseIcon';
@@ -6,9 +7,10 @@ interface AddProjectModalProps {
   isOpen: boolean;
   onClose: () => void;
   onAddProject: (project: Omit<Project, 'id' | 'tasks' | 'updateLog' | 'attachments'>) => void;
+  showToast: (message: string, type: 'success' | 'error') => void;
 }
 
-const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onAddProject }) => {
+const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onAddProject, showToast }) => {
   const [name, setName] = useState('');
   const [studentName, setStudentName] = useState('');
   const [technology, setTechnology] = useState<Technology>(Technology.Python);
@@ -22,7 +24,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ isOpen, onClose, onAd
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !studentName || !startDate || !deadline || !description) {
-      alert('الرجاء تعبئة الحقول الأساسية (اسم المشروع، اسم الطالب، تاريخ البدء، الموعد، الوصف)');
+      showToast('الرجاء تعبئة الحقول الأساسية (اسم المشروع، اسم الطالب، تاريخ البدء، الموعد، الوصف)', 'error');
       return;
     }
     onAddProject({
