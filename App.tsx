@@ -1,6 +1,6 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { type Project, Status, Technology, statusDetails, Task, UpdateLogEntry } from './services/types';
+import { type Project, Status, Technology, statusDetails, Task, UpdateLogEntry, Attachment } from './services/types';
 import Header from './components/Header';
 import ProjectCard from './components/ProjectCard';
 import AddProjectModal from './components/AddProjectModal';
@@ -14,6 +14,8 @@ import TelegramBotSimulatorModal from './components/TelegramBotSimulatorModal';
 import { BotIcon } from './components/icons/BotIcon';
 import { sendTelegramMessage, tgEscape } from './services/telegramService';
 import TimelineView from './components/TimelineView';
+import Toast from './components/Toast';
+import ConfirmationModal from './components/ConfirmationModal';
 
 const migrateProject = (p: any): Project => {
     if (p.progressNotes && !p.updateLog) {
@@ -128,17 +130,13 @@ const initialProjects: Project[] = [
 const APP_STORAGE_KEY = 'projects-data-ismael-farah';
 
 type ViewMode = 'projects' | 'students' | 'timeline';
-
-const formatProjectForTelegram = (project: Project, title: string): string => {
-    return [
-        title,
-        '',
-        `*Project:* ${tgEscape(project.name)}`,
-        `*Student:* ${tgEscape(project.studentName)}`,
-        `*Technology:* ${tgEscape(project.technology)}`,
-        `*Deadline:* ${tgEscape(new Date(project.deadline).toLocaleDateString('en-CA'))}`,
-    ].join('\n');
-};
+type ToastMessage = { id: number; message: string; type: 'success' | 'error' };
+type ConfirmationState = {
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+}
 
 const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -153,6 +151,25 @@ const App: React.FC = () => {
     }
   });
 
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [confirmation, setConfirmation] = useState<ConfirmationState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+        setToasts(prev => prev.filter(t => t.id !== id));
+    }, 5000);
+  }, []);
+
+  const showConfirmation = useCallback((title: string, message: string, onConfirm: () => void) => {
+    setConfirmation({ isOpen: true, title, message, onConfirm });
+  }, []);
+  
+  const closeConfirmation = () => {
+    setConfirmation(prev => ({ ...prev, isOpen: false }));
+  };
+
   useEffect(() => {
     try {
         const projectsToStore = projects.map(p => {
@@ -162,8 +179,9 @@ const App: React.FC = () => {
         localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(projectsToStore));
     } catch (error) {
         console.error("Error saving projects to localStorage", error);
+        showToast('فشل حفظ المشاريع في المتصفح.', 'error');
     }
-  }, [projects]);
+  }, [projects, showToast]);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -178,15 +196,16 @@ const App: React.FC = () => {
     const project = projects.find(p => p.id === projectId);
     if (!project || project.status === newStatus) return;
     
+    const originalStatus = project.status;
+    const updatedProject = { ...project, status: newStatus };
+
     setProjects(prevProjects =>
       prevProjects.map(p =>
-        p.id === projectId ? { ...p, status: newStatus } : p
+        p.id === projectId ? updatedProject : p
       )
     );
 
-    const statusEmoji = statusDetails[newStatus]?.emoji || '';
-    const message = `📊 *Status Update: ${tgEscape(project.name)}*\n\nThe status has been changed to:\n*New Status:* ${statusEmoji} ${tgEscape(newStatus)}`;
-    sendTelegramMessage(message, 'onStatusUpdate');
+    sendTelegramMessage('onStatusUpdate', updatedProject, { originalStatus });
 
   }, [projects]);
   
@@ -212,97 +231,130 @@ const App: React.FC = () => {
     };
     setProjects(prev => [newProject, ...prev]);
     setIsAddModalOpen(false);
+    showToast(`تمت إضافة مشروع "${newProject.name}" بنجاح.`);
 
-    const title = '🌟 *New Project Created\\!* 🌟';
-    const body = formatProjectForTelegram(newProject, title);
-    const message = `${body}\n\nLet the journey begin\\! 🚀`;
-    sendTelegramMessage(message, 'onAdd');
-  }, []);
+    sendTelegramMessage('onAdd', newProject);
+  }, [showToast]);
 
   const handleUpdateProject = useCallback((updatedProject: Project) => {
     const originalProject = projects.find(p => p.id === updatedProject.id);
     if (!originalProject) return;
 
-    const changes: string[] = [];
+    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
+    setIsEditModalOpen(false);
+    showToast(`تم تحديث مشروع "${updatedProject.name}" بنجاح.`);
+    
+    const changes: { details: string[]; tasks: string[]; attachments: string[]; logs: string[] } = {
+        details: [],
+        tasks: [],
+        attachments: [],
+        logs: []
+    };
+    
     const original = migrateProject(originalProject);
     const updated = updatedProject;
 
-    const fieldMappings: { key: keyof Project, label: string, emoji: string }[] = [
-        { key: 'name', label: 'Name', emoji: '📝' },
-        { key: 'studentName', label: 'Student', emoji: '🧑‍💻' },
-        { key: 'technology', label: 'Technology', emoji: '💻' },
-        { key: 'startDate', label: 'Start Date', emoji: '🏁' },
-        { key: 'deadline', label: 'Deadline', emoji: '📅' },
-        { key: 'githubLink', label: 'GitHub Link', emoji: '🔗' },
-        { key: 'whatsappNumber', label: 'WhatsApp', emoji: '💬' },
-        { key: 'telegramUsername', label: 'Telegram', emoji: '✈️' },
+    const fieldMappings: { key: keyof Project, label: string }[] = [
+        { key: 'name', label: 'الاسم' },
+        { key: 'studentName', label: 'الطالب' },
+        { key: 'technology', label: 'التقنية' },
+        { key: 'startDate', label: 'تاريخ البدء' },
+        { key: 'deadline', label: 'الموعد النهائي' },
+        { key: 'githubLink', label: 'GitHub' },
+        { key: 'whatsappNumber', label: 'WhatsApp' },
+        { key: 'telegramUsername', label: 'Telegram' },
     ];
-
-    fieldMappings.forEach(({ key, label, emoji }) => {
-        if (original[key] !== updated[key]) {
-            changes.push(`${emoji} *${label}:*\n_${tgEscape(original[key] as string)}_ ➡️ *${tgEscape(updated[key] as string)}*`);
+    
+    fieldMappings.forEach(({ key, label }) => {
+        const originalValue = (original[key] || '').toString();
+        const updatedValue = (updated[key] || '').toString();
+        if (originalValue !== updatedValue) {
+            changes.details.push(`*${label}:* _${tgEscape(originalValue) || 'فارغ'}_ ⬅️ *${tgEscape(updatedValue) || 'فارغ'}*`);
         }
     });
-    
+
     if (original.description !== updated.description) {
-      changes.push(`📄 *Description has been updated\\.*`);
+        changes.details.push(`*الوصف:* تم تحديثه.`);
     }
 
     if (original.status !== updated.status) {
-      const oldStatusEmoji = statusDetails[original.status]?.emoji || '';
-      const newStatusEmoji = statusDetails[updated.status]?.emoji || '';
-      changes.push(`${newStatusEmoji} *Status:*\n_${tgEscape(original.status)} ${oldStatusEmoji}_ ➡️ *${tgEscape(updated.status)} ${newStatusEmoji}*`);
+       sendTelegramMessage('onStatusUpdate', updated, { originalStatus: original.status });
     }
+    
+    const originalTasks = original.tasks || [];
+    const updatedTasks = updated.tasks || [];
+    const addedTasks = updatedTasks.filter(ut => !originalTasks.some(ot => ot.id === ut.id));
+    const deletedTasks = originalTasks.filter(ot => !updatedTasks.some(ut => ut.id === ot.id));
+    const toggledTasks = updatedTasks.filter(ut => {
+        const ot = originalTasks.find(ot => ot.id === ut.id);
+        return ot && ot.isCompleted !== ut.isCompleted;
+    });
+    const modifiedTasks = updatedTasks.filter(ut => {
+        const ot = originalTasks.find(ot => ot.id === ut.id);
+        return ot && ot.text !== ut.text;
+    });
 
-    const originalAttachmentsCount = original.attachments?.length ?? 0;
-    const updatedAttachmentsCount = updated.attachments?.length ?? 0;
-    if (originalAttachmentsCount !== updatedAttachmentsCount) {
-        changes.push(`📎 *Attachments:*\nChanged from ${originalAttachmentsCount} to ${updatedAttachmentsCount} file(s)`);
+    addedTasks.forEach(t => changes.tasks.push(`➕ *إضافة مهمة:* ${tgEscape(t.text)}`));
+    deletedTasks.forEach(t => changes.tasks.push(`➖ *حذف مهمة:* ${tgEscape(t.text)}`));
+    toggledTasks.forEach(t => changes.tasks.push(t.isCompleted ? `✅ *إكمال مهمة:* ${tgEscape(t.text)}` : `🔄 *إعادة فتح مهمة:* ${tgEscape(t.text)}`));
+    modifiedTasks.forEach(t => changes.tasks.push(`✏️ *تعديل مهمة:* ${tgEscape(t.text)}`));
+
+
+    const originalAttachments = original.attachments || [];
+    const updatedAttachments = updated.attachments || [];
+    const addedAttachments = updatedAttachments.filter(ua => !originalAttachments.some(oa => oa.id === ua.id));
+    const deletedAttachments = originalAttachments.filter(oa => !updatedAttachments.some(ua => ua.id === oa.id));
+
+    addedAttachments.forEach(a => changes.attachments.push(`📎 *إضافة مرفق:* ${tgEscape(a.name)}`));
+    deletedAttachments.forEach(a => changes.attachments.push(`🗑️ *حذف مرفق:* ${tgEscape(a.name)}`));
+
+    const originalLogs = original.updateLog || [];
+    const updatedLogs = updated.updateLog || [];
+    const addedLogs = updatedLogs.filter(ul => !originalLogs.some(ol => ol.id === ul.id));
+
+    addedLogs.forEach(l => changes.logs.push(`✍️ *تحديث جديد:* ${tgEscape(l.text)}`));
+
+
+    if (changes.details.length > 0 || changes.tasks.length > 0 || changes.attachments.length > 0 || changes.logs.length > 0) {
+        sendTelegramMessage('onDetailsUpdate', updated, { changes });
     }
-
-
-    if (changes.length > 0) {
-        const title = `🔄 *Project Updated: ${tgEscape(original.name)}* 🔄`;
-        const message = `${title}\n\nHere are the changes:\n\n${changes.join('\n\n')}\n\nKeep up the great work\\! ✨`;
-        sendTelegramMessage(message, 'onDetailsUpdate');
-    }
-
-    setProjects(prev => prev.map(p => p.id === updatedProject.id ? updatedProject : p));
-    setIsEditModalOpen(false);
-  }, [projects]);
+    
+  }, [projects, showToast]);
   
   const handleAddTask = useCallback((projectId: string, taskText: string) => {
+      let project: Project | undefined;
       setProjects(prevProjects => prevProjects.map(p => {
           if (p.id === projectId) {
               const newTask: Task = { id: `task-${Date.now()}`, text: taskText, isCompleted: false };
-              return { ...p, tasks: [...p.tasks, newTask] };
+              project = { ...p, tasks: [...p.tasks, newTask] };
+              return project;
           }
           return p;
       }));
       
-      const project = projects.find(p => p.id === projectId);
       if(project) {
-        const message = `✅ *New Task Added to ${tgEscape(project.name)}*\n\n*Task:* ${tgEscape(taskText)}\n\nOne step closer to completion\\!`;
-        sendTelegramMessage(message, 'onDetailsUpdate');
+        showToast('تمت إضافة المهمة بنجاح.');
+        sendTelegramMessage('onDetailsUpdate', project, { changes: { tasks: [`➕ *إضافة مهمة:* ${tgEscape(taskText)}`] } });
       }
 
-  }, [projects]);
+  }, [projects, showToast]);
 
   const handleAddUpdateLog = useCallback((projectId: string, updateText: string) => {
+      let project: Project | undefined;
       setProjects(prevProjects => prevProjects.map(p => {
           if (p.id === projectId) {
               const newLog: UpdateLogEntry = { id: `log-${Date.now()}`, text: updateText, timestamp: new Date().toISOString() };
-              return { ...p, updateLog: [...p.updateLog, newLog] };
+              project = { ...p, updateLog: [...p.updateLog, newLog] };
+              return project;
           }
           return p;
       }));
       
-      const project = projects.find(p => p.id === projectId);
        if(project) {
-        const message = `✍️ *New Update for ${tgEscape(project.name)}*\n\n*Update:*\n> ${tgEscape(updateText)}\n\nProgress is being made\\!`;
-        sendTelegramMessage(message, 'onDetailsUpdate');
+        showToast('تمت إضافة التحديث بنجاح.');
+        sendTelegramMessage('onDetailsUpdate', project, { changes: { logs: [`✍️ *تحديث جديد:* ${tgEscape(updateText)}`] } });
       }
-  }, [projects]);
+  }, [projects, showToast]);
 
   const handleOpenEditModal = useCallback((project: Project) => {
     setCurrentProjectForEdit(project);
@@ -313,12 +365,16 @@ const App: React.FC = () => {
      const projectToDelete = projects.find(p => p.id === projectId);
     if (!projectToDelete) return;
 
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا المشروع؟ لا يمكن التراجع عن هذا الإجراء.')) {
-        setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
-        
-        const message = `🗑️ *Project Deleted* 🗑️\n\nThe following project has been removed:\n\n*Project:* ${tgEscape(projectToDelete.name)}\n*Student:* ${tgEscape(projectToDelete.studentName)}\n\n_It will be missed\\._`;
-        sendTelegramMessage(message, 'onDelete');
-    }
+    showConfirmation(
+        'تأكيد الحذف',
+        `هل أنت متأكد من رغبتك في حذف مشروع "${projectToDelete.name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+        () => {
+            setProjects(prevProjects => prevProjects.filter(p => p.id !== projectId));
+            showToast(`تم حذف مشروع "${projectToDelete.name}".`);
+            sendTelegramMessage('onDelete', projectToDelete);
+            closeConfirmation();
+        }
+    );
   };
   
   const handleLoginSuccess = () => {
@@ -327,7 +383,7 @@ const App: React.FC = () => {
   
   const handleBackup = useCallback(() => {
     if (projects.length === 0) {
-      alert("لا توجد مشاريع لعمل نسخة احتياطية.");
+      showToast("لا توجد مشاريع لعمل نسخة احتياطية.", 'error');
       return;
     }
     const dataStr = JSON.stringify(projects.map(p => {
@@ -343,37 +399,41 @@ const App: React.FC = () => {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    alert('تم بدء تحميل النسخة الاحتياطية بنجاح.');
-  }, [projects]);
+    showToast('تم بدء تحميل النسخة الاحتياطية بنجاح.');
+  }, [projects, showToast]);
 
   const handleRestore = useCallback((file: File) => {
-    if (!window.confirm('هل أنت متأكد من رغبتك في استعادة البيانات؟ سيتم استبدال جميع المشاريع الحالية.')) {
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const content = event.target?.result;
-        if (typeof content === 'string') {
-          const restoredProjects = JSON.parse(content);
-          if (Array.isArray(restoredProjects) && (restoredProjects.length === 0 || restoredProjects.every(p => p.id && p.name && p.status))) {
-            setProjects(restoredProjects.map(migrateProject));
-            alert('تم استعادة البيانات بنجاح!');
-          } else {
-            throw new Error('الملف غير صالح أو لا يتبع التنسيق الصحيح.');
+    showConfirmation(
+      'تأكيد الاستعادة',
+      'هل أنت متأكد من رغبتك في استعادة البيانات؟ سيتم استبدال جميع المشاريع الحالية بالبيانات من الملف الذي اخترته.',
+      () => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const content = event.target?.result;
+            if (typeof content === 'string') {
+              const restoredProjects = JSON.parse(content);
+              if (Array.isArray(restoredProjects) && (restoredProjects.length === 0 || restoredProjects.every(p => p.id && p.name && p.status))) {
+                setProjects(restoredProjects.map(migrateProject));
+                showToast('تم استعادة البيانات بنجاح!');
+              } else {
+                throw new Error('الملف غير صالح أو لا يتبع التنسيق الصحيح.');
+              }
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            console.error("Error restoring data:", error);
+            showToast(`فشل في استعادة البيانات. الخطأ: ${errorMessage}`, 'error');
           }
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        console.error("Error restoring data:", error);
-        alert(`فشل في استعادة البيانات. الرجاء التأكد من أن الملف صحيح. الخطأ: ${errorMessage}`);
+        };
+        reader.onerror = () => {
+          showToast('حدث خطأ أثناء قراءة الملف.', 'error');
+        };
+        reader.readAsText(file);
+        closeConfirmation();
       }
-    };
-    reader.onerror = () => {
-      alert('حدث خطأ أثناء قراءة الملف.');
-    };
-    reader.readAsText(file);
-  }, []);
+    );
+  }, [showToast]);
 
   if (!isAuthenticated) {
     return <Login onLoginSuccess={handleLoginSuccess} />;
@@ -382,6 +442,24 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-gray-900 text-white min-h-screen">
+       <div id="toast-container" className="fixed top-5 right-5 z-[100] w-full max-w-sm space-y-3">
+        {toasts.map(toast => (
+          <Toast
+            key={toast.id}
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+          />
+        ))}
+      </div>
+      <ConfirmationModal
+        isOpen={confirmation.isOpen}
+        onClose={closeConfirmation}
+        onConfirm={confirmation.onConfirm}
+        title={confirmation.title}
+        message={confirmation.message}
+      />
+
       <Header />
       <main className="p-4 sm:p-6 md:p-8">
         <Dashboard
@@ -443,6 +521,7 @@ const App: React.FC = () => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onAddProject={handleAddProject}
+        showToast={showToast}
       />
       
       {currentProjectForEdit && (
@@ -451,6 +530,8 @@ const App: React.FC = () => {
           onClose={() => setIsEditModalOpen(false)}
           project={currentProjectForEdit}
           onUpdateProject={handleUpdateProject}
+          showToast={showToast}
+          showConfirmation={showConfirmation}
         />
       )}
       
@@ -463,6 +544,7 @@ const App: React.FC = () => {
       <TelegramSettingsModal 
         isOpen={isTelegramModalOpen}
         onClose={() => setIsTelegramModalOpen(false)}
+        showToast={showToast}
       />
 
       <TelegramBotSimulatorModal
